@@ -1,36 +1,47 @@
-const Datauri = require('datauri');
-const path = require('path');
-const cloudinary = require('../config/cloudinary');
-const sgMail = require('@sendgrid/mail');
+const Datauri = require("datauri");
+const path = require("path");
+const cloudinary = require("../config/cloudinary");
+const sgMail = require("@sendgrid/mail");
+const nodemailer = require("nodemailer");
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 function uploader(img, res) {
-    return new Promise((resolve, reject) => {
-        cloudinary.uploader.upload(img, (err, url) => {
-            if (err) 
-            {
-                // res.status(401).json({message: "Image upload nai ho paa raha"});
-                return reject(err);
-            }
-            // console.log("success");
-            // res.status(401).json({message: "Ho gaya img uplaod"});
-            return resolve(url);
-        });
+  return new Promise((resolve, reject) => {
+    cloudinary.uploader.upload(img, (err, url) => {
+      if (err) {
+        return reject(err);
+      }
+      return resolve(url);
     });
+  });
 }
 
-function sendEmail(mailOptions) {
+const sender = nodemailer.createTransport({
+  service: "gmail",
+  secureConnection: true,
+  logger: true,
+  auth: {
+    user: process.env.NODEMAILER_EMAIL,
+    pass: process.env.NODEMAILER_PASS,
+  },
+});
 
-    return new Promise((resolve, reject) => {
-        sgMail.send(mailOptions, (error, result) => {
-            if (error){ 
-                // console.log(error);
-                return reject(error);
-            }
-            return resolve(result);
-        });
-    });
+function sendEmail({ to, from, subject, html }) {
+  const mail = {
+    from: `Abhishek <${process.env.NODEMAILER_EMAIL}>`,
+    to,
+    subject: subject,
+    html: `${html}`,
+  };
+
+  sender.sendMail(mail, function (error, info) {
+    if (error) {
+      console.log(error);
+    } else {
+      console.log("Email sent successfully: " + info.response);
+    }
+  });
 }
 
 module.exports = { uploader, sendEmail };
